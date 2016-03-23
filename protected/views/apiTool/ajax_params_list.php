@@ -1,3 +1,4 @@
+<?php echo ';;;';print_r($page_list); ?>
 <table class="sui-table table-bordered">
     <thead>
     <tr>

@@ -19,8 +19,8 @@ class WeiXinGongZhongHaoController extends WeixinClass
     public function actionUser(){
         $code=$_GET['code']; //用户确认
         if(empty($code)){ exit; }
-        //通过code去
 
+        //通过code去
         $url='https://api.weixin.qq.com/sns/oauth2/access_token';
         $jsonData=Yii::app()->curl->get($url,
             array(
@@ -30,16 +30,32 @@ class WeiXinGongZhongHaoController extends WeixinClass
                 'grant_type'=>'authorization_code',
             )
         );
-        echo $jsonData;
+        if(empty($jsonData)){exit;}
+        $data=CJSON::decode($jsonData);
+        
+
+        //通过code去
+        $url='https://api.weixin.qq.com/sns/userinfo';
+        $jsonData=Yii::app()->curl->get($url,
+            array(
+                'access_token'=>$data['access_token'],
+                'openid'=>$data['openid'],
+                'lang'=>'zh_CN',
+            )
+        );
+        if(empty($jsonData)){exit;}
+        echo $jsonData;exit;
 
 
-        echo '<br>';
-        $this->getAccessToken($this->appId,$this->appsecret);
+        //$this->getAccessToken($this->appId,$this->appsecret);
     }
 
     public function actionT(){
         $url='http://www.mywink.top/weiXinGongZhongHao/User';
-        echo 'https://open.weixin.qq.com/connect/oauth2/authorize?appid='.$this->appId.'&redirect_uri='.urlencode($url).'&response_type=code&scope=snsapi_base&state=STATE#wechat_redirect';
+       // $scopt='snsapi_base';
+        $scopt='snsapi_userinfo';
+
+        echo 'https://open.weixin.qq.com/connect/oauth2/authorize?appid='.$this->appId.'&redirect_uri='.urlencode($url).'&response_type=code&scope='.$scopt.'&state=STATE#wechat_redirect';
 
     }
 

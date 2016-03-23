@@ -8,6 +8,7 @@ class ApiToolController extends Controller
     private $dataBase_name = 'wink';
     public $type_data=array(array('id'=>1,'name'=>'GET'),array('id'=>2,'name'=>'POST'),array('id'=>3,'name'=>'JSON'));
     public $type_name=array('1'=>'GET','2'=>'POST','3'=>'JSON');
+    public $params_chr=';',$val_chr=','; //参数分割符,参数值分割害符
 
 
     /**
@@ -50,9 +51,8 @@ class ApiToolController extends Controller
         $page = new PaginationAjax($cnt,$per,'api_page','','showApiList','POST');
 
         $DataList=ApiUrlInfo::model()->retDataList(" ORDER BY `id` DESC $page->limit");
-
         $hostsArray=ApiHostsInfo::model()->HostsNameForHostsIdArray();
-        $this->render('/apiTool/ajaxApiList',array('data'=>$DataList,'page_list'=>$page->fpage(),'hosts_array'=>$hostsArray));
+        $this->render('/apiTool/ajax_api_list',array('data'=>$DataList,'page_list'=>$page->fpage(),'hosts_array'=>$hostsArray));
     }
 
     /**
@@ -122,30 +122,55 @@ class ApiToolController extends Controller
         }
         if(!empty($url)){
             //接口参数整理
+            $p_chr=$this->params_chr;
+            $v_chr=$this->val_chr;
 
             $curl_params=array();
+            //获得动态参数 如token等
             if( !empty($params_data['dynamic_params'])){
-                $params=explode(';',ClearFormat($params_data['dynamic_params']));
+                $params=explode($p_chr,ClearFormat($params_data['dynamic_params']));
                 foreach($params as $k =>$v){
                     if(empty($v)){ continue;}
-                    $a=explode(',',$v);
-                    if(empty($a[0])){ continue;}
-                    $curl_params[$a[0]]=$a[1];
+                /**
+                 * 解决参数值为 逗号分割问题
+                     $a=explode(',',$v);
+                     if(empty($a[0])){ continue;}
+                     $curl_params[$a[0]]=$a[1];
+                 */
+                    //通过分割字符串来取出key名及参数值
+                    if(stripos($v,$v_chr>1)){
+                        $first=stripos($v,$v_chr);
+                        $last=strripos($v,$v_chr);
+
+                        $curl_params_key=substr($v,$first);
+                        if(empty($curl_params_key)){ continue;}
+                        $curl_params_val=substr($v,$first+1,$last-$first-1);
+                        $curl_params[$curl_params_key]=$curl_params_val;
+                    }
                 }
             }
-
+            //获得GET或POST参数
             if( !empty($params_data['params']) && $params_data['type']!=3 ){
-                $params=explode(';',ClearFormat($params_data['params']));
+                $params=explode($p_chr,ClearFormat($params_data['params']));
                 foreach($params as $k =>$v){
                     if(empty($v)){ continue;}
+                    /**
+                     * 解决参数值为 逗号分割问题
                     $a=explode(',',$v);
                     if(empty($a[0])){ continue;}
                     $curl_params[$a[0]]=$a[1];
+                     */
+                    //通过分割字符串来取出key名及参数值
+                    if(stripos($v,$v_chr)>1){
+                        $first=stripos($v,$v_chr);
+                        $last=strripos($v,$v_chr);
+                        $curl_params_key=substr($v,0,$first);
+                        if(empty($curl_params_key)){ continue;}
+                        $curl_params_val=substr($v,$first+1,$last-$first-1);
+                        $curl_params[$curl_params_key]=$curl_params_val;
+                    }
                 }
             }
-
-
-
 
             if($params_data['type']==1){
                 $params_data['typeName']='GET';
@@ -209,7 +234,6 @@ class ApiToolController extends Controller
         }
     }
 
-
     /**
      * 接口调试demo 输出接收参数JSON串
      */
@@ -235,7 +259,6 @@ class ApiToolController extends Controller
         $this->render('/apiTool/ajax_params_list',array('data'=>$model,'page_list'=>$page_list));
 
     }
-
 
 
 
